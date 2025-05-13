@@ -16,63 +16,26 @@ import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-# Step 3: Load environment variables
+# Load environment vars from .env file
 load_dotenv()
 
-# Step 4: Configure Gemini API
+# Set up Gemini API with our key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Step 5: Initialize FastAPI app
+# Initialize FastAPI app
 app = FastAPI(title="Brain Tumor Classification API")
 
-# Absolute path to your React build folder
-build_dir = os.path.join(os.path.dirname(__file__), "build")
-
-@app.get("/background.png")
-def background():
-    return FileResponse(os.path.join(build_dir, "background.png"))
-
-# Serve manifest.json directly
-@app.get("/manifest.json")
-def manifest():
-    return FileResponse(os.path.join(build_dir, "manifest.json"))
-
-# Serve favicon
-@app.get("/favicon.ico")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "favicon.ico"))
-
-@app.get("/logo512.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo512.png"))
-
-@app.get("/logo192.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo192.png"))
-
-# Serve React static files
-app.mount("/static", StaticFiles(directory="build/static"), name="static")
-
-# Serve index.html on all non-API GET routes
-@app.get("/{full_path:path}")
-async def serve_react_app(full_path: str):
-    file_path = os.path.join("build", "index.html")
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    else:
-        return {"error": "Frontend not built. Run `npm run build` in your React app."}
-
-# Step 6: Configure CORS
+# Fix CORS - no trailing slash in origin URL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://neurotrix-d2f6.onrender.com/"],  # In production, specify your frontend domain
+    allow_origins=["https://neurotrix-d2f6.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Step 7: Define data models
+# Define data models for API
 class PatientInfo(BaseModel):
     name: str
     age: int
@@ -85,12 +48,11 @@ class ClassificationResult(BaseModel):
     confidence: float
     probabilities: List[Dict[str, Any]]
 
-# Step 8: Load ML model
+# Load the trained ResNet model
 def load_model():
-    # Based on the provided notebook
     model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
     
-    # Modify the final fully connected layer for our 4 classes
+    # Modify fc layer for our 4 classes
     num_ftrs = model.fc.in_features
     model.fc = torch.nn.Sequential(
         torch.nn.Linear(num_ftrs, 512),
@@ -99,13 +61,13 @@ def load_model():
         torch.nn.Linear(512, 4)
     )
     
-    # Load the trained weights
+    # Load our trained weights
     model.load_state_dict(torch.load("best_brain_tumor_resnet18_finetuned.pth", 
                                      map_location=torch.device('cpu')))
     model.eval()
     return model
 
-# Try to load the model at startup
+# Load model at startup
 try:
     model = load_model()
     print("Model loaded successfully!")
@@ -114,23 +76,22 @@ except Exception as e:
     print(f"Error loading model: {e}")
     model = None
 
-# Step 9: Function to preprocess image and run inference
+# Preprocess image and run prediction
 def predict_tumor(image_bytes):
     if model is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
-        # Open image from bytes
+        # Process image
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         
-        # Apply same preprocessing as in the notebook
+        # Standard ResNet preprocessing
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         
-        # Preprocess image
         image_tensor = transform(image).unsqueeze(0)
         
         # Run inference
@@ -138,18 +99,15 @@ def predict_tumor(image_bytes):
             outputs = model(image_tensor)
             probabilities = torch.nn.functional.softmax(outputs, dim=1)[0]
             
-            # Get predicted class
             _, predicted = torch.max(outputs, 1)
             predicted_class = predicted.item()
             
-            # Format results
+            # Format results for frontend
             class_name = CATEGORIES[predicted_class]
             confidence = probabilities[predicted_class].item()
             
-            # Get all class probabilities
             all_probs = []
             for i, c in enumerate(CATEGORIES):
-                # Format class names for better display
                 display_name = "No Tumor" if c == "notumor" else c.capitalize()
                 all_probs.append({
                     "name": display_name,
@@ -206,7 +164,7 @@ async def generate_recommendation(classification_result, patient_info):
         """
         
         # Generate recommendation using Gemini
-        gem_model = genai.GenerativeModel('gemini-1.5-pro')
+        gem_model = genai.GenerativeModel('gemini-2.0-flash')
         response = await gem_model.generate_content_async(prompt)
         
         # Extract the text from the response and parse as JSON
@@ -288,7 +246,7 @@ async def generate_recommendation(classification_result, patient_info):
                 "urgency": "medium"
             }
 
-# Step 11: API endpoint for analyzing MRI image
+# API ROUTES
 @app.post("/api/analyze_mri")
 async def analyze_mri(
     file: UploadFile = File(...),
@@ -323,18 +281,45 @@ async def analyze_mri(
         "recommendation": recommendation
     }
 
-# Step 12: Simple status endpoint
 @app.get("/api/status")
 async def status():
     return {"status": "ok", "model_loaded": model is not None}
 
-# Step 13: Run the server
+# STATIC FILES - React build assets
+build_dir = os.path.join(os.path.dirname(__file__), "build")
+
+@app.get("/background.png")
+def background():
+    return FileResponse(os.path.join(build_dir, "background.png"))
+
+@app.get("/manifest.json")
+def manifest():
+    return FileResponse(os.path.join(build_dir, "manifest.json"))
+
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(os.path.join(build_dir, "favicon.ico"))
+
+@app.get("/logo512.png")
+def logo512():
+    return FileResponse(os.path.join(build_dir, "logo512.png"))
+
+@app.get("/logo192.png")
+def logo192():
+    return FileResponse(os.path.join(build_dir, "logo192.png"))
+
+# Static assets directory
+app.mount("/static", StaticFiles(directory="build/static"), name="static")
+
+# React app fallback - must be last!
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    file_path = os.path.join("build", "index.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        return {"error": "Frontend not built. Run `npm run build` in your React app."}
+
+# Start the server
 if __name__ == "__main__":
-    
-    # app = FastAPI()
-
-    # @app.get("/api/status")
-    # async def status():
-    #     return {"status": "ok"}
-
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
