@@ -535,7 +535,7 @@ export default function EnhancedBrainTumorClassifier() {
     formData.append('medicalHistory', patientInfo.medicalHistory);
     formData.append('symptoms', patientInfo.symptoms);
   
-    fetch('http://192.168.122.153:8000/api/analyze_mri', {
+    fetch('https://neurotrix-d2f6.onrender.com/api/analyze_mri', {
       method: 'POST',
       body: formData,
       signal: signal,

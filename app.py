@@ -66,7 +66,7 @@ async def serve_react_app(full_path: str):
 # Step 6: Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=["https://neurotrix-d2f6.onrender.com/"],  # In production, specify your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
