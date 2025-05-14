@@ -26,7 +26,42 @@ genai.configure(api_key=GEMINI_API_KEY)
 # Step 5: Initialize FastAPI app
 app = FastAPI(title="Brain Tumor Classification API")
 
+# Absolute path to your React build folder
+build_dir = os.path.join(os.path.dirname(__file__), "build")
 
+@app.get("/background.png")
+def background():
+    return FileResponse(os.path.join(build_dir, "background.png"))
+
+# Serve manifest.json directly
+@app.get("/manifest.json")
+def manifest():
+    return FileResponse(os.path.join(build_dir, "manifest.json"))
+
+# Serve favicon
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(os.path.join(build_dir, "favicon.ico"))
+
+@app.get("/logo512.png")
+def favicon():
+    return FileResponse(os.path.join(build_dir, "logo512.png"))
+
+@app.get("/logo192.png")
+def favicon():
+    return FileResponse(os.path.join(build_dir, "logo192.png"))
+
+# Serve React static files
+app.mount("/static", StaticFiles(directory="build/static"), name="static")
+
+# Serve index.html on all non-API GET routes
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    file_path = os.path.join("build", "index.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        return {"error": "Frontend not built. Run `npm run build` in your React app."}
 
 # Step 6: Configure CORS
 app.add_middleware(
@@ -292,43 +327,6 @@ async def analyze_mri(
 @app.get("/api/status")
 async def status():
     return {"status": "ok", "model_loaded": model is not None}
-
-# Absolute path to your React build folder
-build_dir = os.path.join(os.path.dirname(__file__), "build")
-
-@app.get("/background.png")
-def background():
-    return FileResponse(os.path.join(build_dir, "background.png"))
-
-# Serve manifest.json directly
-@app.get("/manifest.json")
-def manifest():
-    return FileResponse(os.path.join(build_dir, "manifest.json"))
-
-# Serve favicon
-@app.get("/favicon.ico")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "favicon.ico"))
-
-@app.get("/logo512.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo512.png"))
-
-@app.get("/logo192.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo192.png"))
-
-# Serve React static files
-app.mount("/static", StaticFiles(directory="build/static"), name="static")
-
-# Serve index.html on all non-API GET routes
-@app.get("/{full_path:path}")
-async def serve_react_app(full_path: str):
-    file_path = os.path.join("build", "index.html")
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    else:
-        return {"error": "Frontend not built. Run `npm run build` in your React app."}
 
 # Step 13: Run the server
 if __name__ == "__main__":
