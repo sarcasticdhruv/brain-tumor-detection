@@ -16,6 +16,12 @@ import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Step 3: Load environment variables
 load_dotenv()
 
@@ -74,10 +80,10 @@ def load_model():
 # Try to load the model at startup
 try:
     model = load_model()
-    print("Model loaded successfully!")
+    logger.info("Model loaded successfully!")
     CATEGORIES = ['notumor', 'glioma', 'meningioma', 'pituitary']
 except Exception as e:
-    print(f"Error loading model: {e}")
+    logger.error(f"Error loading model: {e}")
     model = None
 
 # Step 9: Function to preprocess image and run inference
@@ -335,4 +341,4 @@ async def serve_react_app(full_path: str):
 if __name__ == "__main__":
     
     # app = FastAPI()
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
