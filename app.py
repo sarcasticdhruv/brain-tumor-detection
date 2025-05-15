@@ -95,7 +95,7 @@ def load_model():
     
     # Create ResNet18 model
     try:
-        model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=False)
+        model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
         
         # Modify fc layer for our 4 classes
         num_ftrs = model.fc.in_features
@@ -144,7 +144,7 @@ def try_load_alternative_model():
     logger.info("Attempting to load model with alternative approach...")
     try:
         # Create a basic ResNet18 model
-        model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=False)
+        model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
         
         # Modify the final layer to have 4 outputs
         model.fc = torch.nn.Linear(model.fc.in_features, 4)
@@ -467,9 +467,18 @@ async def startup_event():
 # STATIC FILES - React build assets
 build_dir = os.path.join(os.path.dirname(__file__), "build")
 
-@app.get("/background.png")
+@app.get("/background-light.png")
 def background():
-    file_path = os.path.join(build_dir, "background.png")
+    file_path = os.path.join(build_dir, "background-light.png")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        logger.warning(f"File not found: {file_path}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+@app.get("/background-dark.png")
+def background():
+    file_path = os.path.join(build_dir, "background-dark.png")
     if os.path.exists(file_path):
         return FileResponse(file_path)
     else:
