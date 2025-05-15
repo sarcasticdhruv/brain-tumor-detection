@@ -77,15 +77,6 @@ def load_model():
     model.eval()
     return model
 
-# Try to load the model at startup
-try:
-    model = load_model()
-    logger.info("Model loaded successfully!")
-    CATEGORIES = ['notumor', 'glioma', 'meningioma', 'pituitary']
-except Exception as e:
-    logger.error(f"Error loading model: {e}")
-    model = None
-
 # Step 9: Function to preprocess image and run inference
 def predict_tumor(image_bytes):
     if model is None:
@@ -259,8 +250,17 @@ async def generate_recommendation(classification_result, patient_info):
                 "followUp": "Hormonal panel and visual field testing within 2 weeks. Regular follow-up with both neurosurgery and endocrinology specialists.",
                 "urgency": "medium"
             }
-
+        
+# Try to load the model at startup
+try:
+    model = load_model()
+    logger.info("Model loaded successfully!")
+    CATEGORIES = ['notumor', 'glioma', 'meningioma', 'pituitary']
+except Exception as e:
+    logger.error(f"Error loading model: {e}")
+    model = None
 # Step 11: API endpoint for analyzing MRI image
+
 @app.post("/api/analyze_mri")
 async def analyze_mri(
     file: UploadFile = File(...),
