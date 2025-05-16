@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi import Request
 
 import logging
 
@@ -63,7 +64,7 @@ def load_model():
     # model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
     import torchvision.models as models
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     model = models.resnet18(pretrained=True)
     model = model.to(device)
     # Modify the final fully connected layer for our 4 classes
@@ -173,7 +174,7 @@ async def generate_recommendation(classification_result, patient_info):
         """
         
         # Generate recommendation using Gemini
-        gem_model = genai.GenerativeModel('gemini-1.5-pro')
+        gem_model = genai.GenerativeModel('gemini-2.0-flash-lite')
         response = await gem_model.generate_content_async(prompt)
         
         # Extract the text from the response and parse as JSON
@@ -330,6 +331,16 @@ def favicon():
 def favicon():
     return FileResponse(os.path.join(build_dir, "logo192.png"))
 
+@app.head("/")
+async def uptime_check(request: Request):
+    user_agent = request.headers.get("User-Agent", "")
+    
+    if "UptimeRobot" in user_agent:
+        return JSONResponse(content={"status": "I am awake!"}, status_code=200)
+    
+    # Deny other bots or tools
+    return JSONResponse(content={"error": "Not allowed"}, status_code=403)
+
 # Serve React static files
 app.mount("/static", StaticFiles(directory="build/static"), name="static")
 
@@ -340,7 +351,7 @@ async def serve_react_app(full_path: str):
     if os.path.exists(file_path):
         return FileResponse(file_path)
     else:
-        return {"error": "Frontend not built. Run `npm run build` in your React app."}
+        return {"error": "Frontend not built. Run `npm run build` in React app."}
 # Step 13: Run the server
 if __name__ == "__main__":
     
