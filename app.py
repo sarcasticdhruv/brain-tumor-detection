@@ -59,7 +59,6 @@ class ClassificationResult(BaseModel):
 
 # Step 8: Load ML model
 def load_model():
-    def load_model():
     try:
         # Path to store the pre-trained weights
         pretrained_weights_path = "resnet18_pretrained.pth"
