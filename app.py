@@ -59,45 +59,27 @@ class ClassificationResult(BaseModel):
 
 # Step 8: Load ML model
 def load_model():
-    try:
-        # Path to store the pre-trained weights
-        pretrained_weights_path = "resnet18_pretrained.pth"
-        
-        # Check if we already have the pre-trained weights
-        if not os.path.exists(pretrained_weights_path):
-            logger.info("Downloading pre-trained ResNet18 weights...")
-            # Download the pre-trained weights just once
-            temp_model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
-            torch.save(temp_model.state_dict(), pretrained_weights_path)
-            logger.info(f"Pre-trained weights saved to {pretrained_weights_path}")
-            del temp_model  # Clean up memory
-        
-        # Create a new ResNet18 model with the same architecture
-        import torchvision.models as models
-        model = models.resnet18(pretrained=False)
-        
-        # Load the pre-trained weights we previously saved
-        model.load_state_dict(torch.load(pretrained_weights_path, map_location=torch.device('cpu')))
-        logger.info("Pre-trained weights loaded successfully")
-        
-        # Make the same modifications to the final fully connected layer
-        num_ftrs = model.fc.in_features
-        model.fc = torch.nn.Sequential(
-            torch.nn.Linear(num_ftrs, 512),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.5),
-            torch.nn.Linear(512, 4)
-        )
-        
-        # Now load your fine-tuned weights that contain your trained parameters
-        model.load_state_dict(torch.load("best_brain_tumor_resnet18_finetuned.pth", 
-                                        map_location=torch.device('cpu')))
-        model.eval()
-        logger.info("Fine-tuned model loaded successfully!")
-        return model
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        return None
+    # Based on the provided notebook
+    # model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
+    import torchvision.models as models
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    model = models.resnet18(pretrained=True)
+    model = model.to(device)
+    # Modify the final fully connected layer for our 4 classes
+    num_ftrs = model.fc.in_features
+    model.fc = torch.nn.Sequential(
+        torch.nn.Linear(num_ftrs, 512),
+        torch.nn.ReLU(),
+        torch.nn.Dropout(0.5),
+        torch.nn.Linear(512, 4)
+    )
+    
+    # Load the trained weights
+    model.load_state_dict(torch.load("best_brain_tumor_resnet18_finetuned.pth", 
+                                     map_location=torch.device('cpu')))
+    model.eval()
+    return model
 
 # Step 9: Function to preprocess image and run inference
 def predict_tumor(image_bytes):
