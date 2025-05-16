@@ -535,7 +535,7 @@ export default function EnhancedBrainTumorClassifier() {
     formData.append('medicalHistory', patientInfo.medicalHistory);
     formData.append('symptoms', patientInfo.symptoms);
   
-    fetch('https://neurotrix-d2f6.onrender.com/api/analyze_mri', {
+    fetch('https://neurostem.onrender.com/api/analyze_mri', {
       method: 'POST',
       body: formData,
       signal: signal,
@@ -614,7 +614,7 @@ export default function EnhancedBrainTumorClassifier() {
     doc.setFontSize(20);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(0, 51, 102);
-    doc.text("NEUROTRIX", pageWidth / 2, 20, { align: "center" });
+    doc.text("NEUROSTEM", pageWidth / 2, 20, { align: "center" });
     
     // subtitle with document type
     doc.setFontSize(12);
@@ -858,8 +858,8 @@ export default function EnhancedBrainTumorClassifier() {
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text("NeuroTrix", pageWidth / 2, pageHeight - 20, { align: "center" });
-    doc.text("www.neurotrix.netlify.app/", pageWidth / 2, pageHeight - 15, { align: "center" });
+    doc.text("Neurostem", pageWidth / 2, pageHeight - 20, { align: "center" });
+    doc.text("https://neurostem.onrender.com/", pageWidth / 2, pageHeight - 15, { align: "center" });
     
     // Disclaimer and page number
       doc.setFontSize(7);
@@ -946,7 +946,7 @@ export default function EnhancedBrainTumorClassifier() {
         <h1 className={`text-3xl xs:text-4xl sm:text-6xl font-orbitron font-bold ${
           isDarkMode ? 'text-blue-400' : 'text-gray-900'
         } text-center mb-1 sm:mb-2 orbitron-font pt-3 sm:pt-10 transition-all`}>
-          Neurotrix
+          Neurostem
         </h1>
 
         {/* Divider with gradient */}

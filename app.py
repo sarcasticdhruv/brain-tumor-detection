@@ -39,7 +39,7 @@ build_dir = os.path.join(os.path.dirname(__file__), "build")
 # Step 6: Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://neurotrix-d2f6.onrender.com/"],  # In production, specify your frontend domain
+    allow_origins=["https://neurostem.onrender.com/"],  # In production, specify your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
