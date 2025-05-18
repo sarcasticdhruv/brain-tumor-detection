@@ -334,8 +334,8 @@ def favicon():
 @app.head("/")
 async def uptime_check(request: Request):
     user_agent = request.headers.get("User-Agent", "")
-    
-    if "UptimeRobot" in user_agent:
+    client_ip = request.client.host
+    if "UptimeRobot" in user_agent or client_ip == "127.0.0.1":
         return JSONResponse(content={"status": "I am awake!"}, status_code=200)
     
     # Deny other bots or tools
