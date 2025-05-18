@@ -1,7 +1,7 @@
 {
-  "short_name": "NeuroTrix",
-  "name": "NeuroTrix - Brain Tumor Classifier",
-  "version": "1.0.0",
+  "short_name": "Neurostem",
+  "name": "Neurostem - Brain Tumor Detetction",
+  "version": "1.7.0",
   "description": "Advanced neural network-based classification system for brain tumor detection",
   "author": "Dhruv",
   "lang": "en-US",
