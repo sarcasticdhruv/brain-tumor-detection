@@ -39,7 +39,7 @@ build_dir = os.path.join(os.path.dirname(__file__), "build")
 # Step 6: Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://neurostem.onrender.com/"],  # In production, specify your frontend domain
+    allow_origins=["https://neurostem.onrender.com"],  # In production, specify your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -256,6 +256,8 @@ async def generate_recommendation(classification_result, patient_info):
                 "urgency": "medium"
             }
         
+# Replace the bottom part of your app.py with this cleaner version:
+
 # Try to load the model at startup
 try:
     model = load_model()
@@ -264,8 +266,8 @@ try:
 except Exception as e:
     logger.error(f"Error loading model: {e}")
     model = None
-# Step 11: API endpoint for analyzing MRI image
 
+# API endpoint for analyzing MRI image
 @app.post("/api/analyze_mri")
 async def analyze_mri(
     file: UploadFile = File(...),
@@ -275,10 +277,8 @@ async def analyze_mri(
     medicalHistory: Optional[str] = Form(None),
     symptoms: Optional[str] = Form(None)
 ):
-    # Read the image file
     image_bytes = await file.read()
     
-    # Prepare patient info
     patient_info = PatientInfo(
         name=name,
         age=age,
@@ -287,49 +287,28 @@ async def analyze_mri(
         symptoms=symptoms
     )
     
-    # Run tumor classification
     classification_result = predict_tumor(image_bytes)
-    
-    # Generate recommendation using Gemini API
     recommendation = await generate_recommendation(classification_result, patient_info)
     
-    # Return combined results
     return {
         "patientInfo": patient_info.dict(),
         "classification": classification_result,
         "recommendation": recommendation
     }
 
-# Step 12: Simple status endpoint
+# Simple status endpoint
 @app.get("/api/status")
 async def status():
     return {"status": "ok", "model_loaded": model is not None}
 
-@app.get("/background-light.png")
-def background():
-    return FileResponse(os.path.join(build_dir, "background-light.png"))
-
-@app.get("/background-dark.png")
-def background():
-    return FileResponse(os.path.join(build_dir, "background-dark.png"))
-
-# Serve manifest.json directly
+# Only keep these two if your app specifically needs them
 @app.get("/manifest.json")
-def manifest():
+def serve_manifest():
     return FileResponse(os.path.join(build_dir, "manifest.json"))
 
-# Serve favicon
 @app.get("/favicon.ico")
-def favicon():
+def serve_favicon():
     return FileResponse(os.path.join(build_dir, "favicon.ico"))
-
-@app.get("/logo512.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo512.png"))
-
-@app.get("/logo192.png")
-def favicon():
-    return FileResponse(os.path.join(build_dir, "logo192.png"))
 
 @app.head("/")
 async def uptime_check(request: Request):
@@ -337,26 +316,41 @@ async def uptime_check(request: Request):
     client_ip = request.client.host
     if "UptimeRobot" in user_agent or client_ip == "127.0.0.1":
         return JSONResponse(content={"status": "I am awake!"}, status_code=200)
-    
-    # Deny other bots or tools
     return JSONResponse(content={"error": "Not allowed"}, status_code=403)
 
-# Serve React static files
-app.mount("/static", StaticFiles(directory="build/static"), name="static")
+# Mount static files (CSS, JS, images from /static folder)
+static_dir = os.path.join(build_dir, "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    logger.info(f"Static files mounted from {static_dir}")
+else:
+    logger.error(f"Static directory not found at {static_dir}")
 
-public_dir = os.path.join(os.path.dirname(__file__), "brain-tumor-classifier", "public")
-app.mount("/", StaticFiles(directory=public_dir, html=True), name="public")
+# Debug logging
+logger.info(f"Build directory: {build_dir}")
+logger.info(f"Build directory exists: {os.path.exists(build_dir)}")
+logger.info(f"Index.html exists: {os.path.exists(os.path.join(build_dir, 'index.html'))}")
 
-# Serve index.html on all non-API GET routes
+# Serve React app for all other routes (MUST BE LAST)
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
-    file_path = os.path.join("build", "index.html")
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    else:
-        return {"error": "Frontend not built. Run `npm run build` in React app."}
-# Step 13: Run the server
-if __name__ == "__main__":
+    # Skip API routes
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
     
-    # app = FastAPI()
+    # For any other file in build directory, try to serve it directly
+    file_path = os.path.join(build_dir, full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # Otherwise serve index.html (React Router handles client-side routing)
+    index_path = os.path.join(build_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        logger.error(f"index.html not found at {index_path}")
+        raise HTTPException(status_code=500, detail="Frontend not built properly")
+
+# Run the server
+if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
