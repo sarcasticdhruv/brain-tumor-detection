@@ -344,7 +344,7 @@ async def uptime_check(request: Request):
 public_dir = os.path.join(os.path.dirname(__file__), "brain-tumor-classifier", "public")
 app.mount("/", StaticFiles(directory=public_dir, html=True), name="public")
 # Serve React static files
-app.mount("/static", StaticFiles(directory="build/static"), name="static")
+# app.mount("/static", StaticFiles(directory="build/static"), name="static")
 
 # Serve index.html on all non-API GET routes
 @app.get("/{full_path:path}")
