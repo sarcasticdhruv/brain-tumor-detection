@@ -341,10 +341,11 @@ async def uptime_check(request: Request):
     # Deny other bots or tools
     return JSONResponse(content={"error": "Not allowed"}, status_code=403)
 
+# Serve React static files
+app.mount("/static", StaticFiles(directory="build/static"), name="static")
+
 public_dir = os.path.join(os.path.dirname(__file__), "brain-tumor-classifier", "public")
 app.mount("/", StaticFiles(directory=public_dir, html=True), name="public")
-# Serve React static files
-# app.mount("/static", StaticFiles(directory="build/static"), name="static")
 
 # Serve index.html on all non-API GET routes
 @app.get("/{full_path:path}")
